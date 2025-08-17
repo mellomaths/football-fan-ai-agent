@@ -1,0 +1,23 @@
+[project]
+name = "football-fan-ai-agent"
+version = "0.1.0"
+description = "AI agent for searching football games using DeepSeek API"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "black>=25.1.0",
+    "deepseek>=1.0.0",
+    "flake8>=7.3.0",
+    "google>=3.0.0",
+    "google-genai>=1.30.0",
+    "isort>=6.0.1",
+    "nltk>=3.9.1",
+    "openai>=1.99.9",
+    "pylint>=3.3.8",
+    "python-crontab>=3.3.0",
+    "python-dotenv>=0.9.9",
+    "requests>=2.31.0",
+    "ruff>=0.12.9",
+    "schedule>=1.2.2",
+    "typer>=0.16.0",
+]
