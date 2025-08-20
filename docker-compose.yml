@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # Default service - shows help
+  football-fan-ai:
+    build: .
+    container_name: football-fan-ai-agent
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Add your API keys here or use a .env file
+      # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY}
+      # - FOOTBALL_DATA_API_BASE_URL=${FOOTBALL_DATA_API_BASE_URL}
+    volumes:
+      # Mount the db directory to persist data
+      - ./db:/app/db
+      # Mount source code for development (optional)
+      # - ./src:/app/src
+    working_dir: /app
+    command: ["python", "main.py", "--help"]
+    profiles:
+      - default
+
+  # Service for loading database
+  load-database:
+    build: .
+    container_name: football-fan-ai-load-db
+    environment:
+      - PYTHONUNBUFFERED=1
+      # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY}
+      # - FOOTBALL_DATA_API_BASE_URL=${FOOTBALL_DATA_API_BASE_URL}
+    volumes:
+      - ./db:/app/db
+    working_dir: /app
+    command: ["python", "main.py", "load-database"]
+    profiles:
+      - commands
+
+  # Service for adding team to calendar (requires team parameter)
+  add-to-calendar:
+    build: .
+    container_name: football-fan-ai-calendar
+    environment:
+      - PYTHONUNBUFFERED=1
+      # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY}
+      # - FOOTBALL_DATA_API_BASE_URL=${FOOTBALL_DATA_API_BASE_URL}
+    volumes:
+      - ./db:/app/db
+    working_dir: /app
+    command: ["python", "main.py", "add-to-calendar", "TEAM_NAME"]
+    profiles:
+      - commands
+
+  # Service for interactive shell
+  shell:
+    build: .
+    container_name: football-fan-ai-shell
+    environment:
+      - PYTHONUNBUFFERED=1
+      # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY}
+      # - FOOTBALL_DATA_API_BASE_URL=${FOOTBALL_DATA_API_BASE_URL}
+    volumes:
+      - ./db:/app/db
+      - ./src:/app/src  # Mount source for development
+    working_dir: /app
+    command: ["/bin/bash"]
+    stdin_open: true
+    tty: true
+    profiles:
+      - commands
+
+  # Service for running hello command
+  hello:
+    build: .
+    container_name: football-fan-ai-hello
+    environment:
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./db:/app/db
+    working_dir: /app
+    command: ["python", "main.py", "hello", "World"]
+    profiles:
+      - commands
+
+  # Service for running the scheduler
+  scheduler:
+    build: .
+    container_name: football-fan-ai-scheduler
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Add your API keys here for the scheduler
+      # - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      # - FOOTBALL_DATA_API_KEY=${FOOTBALL_DATA_API_KEY}
+      # - FOOTBALL_DATA_API_BASE_URL=${FOOTBALL_DATA_API_BASE_URL}
+    volumes:
+      - ./db:/app/db
+      - ./src:/app/src  # Mount source for scheduler access
+    working_dir: /app
+    command: ["python", "scheduler.py"]
+    restart: unless-stopped  # Restart if it crashes
+    profiles:
+      - commands
+      - scheduler  # Separate profile for scheduler operations
+
+# Example usage:
+# 
+# Default service (help):
+# docker-compose up football-fan-ai
+# 
+# Load database:
+# docker-compose --profile commands run --rm load-database
+# 
+# Add team to calendar (replace TEAM_NAME):
+# docker-compose --profile commands run --rm add-to-calendar
+# 
+# Interactive shell:
+# docker-compose --profile commands run --rm shell
+# 
+# Hello command:
+# docker-compose --profile commands run --rm hello
+# 
+# All services:
+# docker-compose --profile commands up
+# 
+# Run scheduler (long-running service):
+# docker-compose --profile scheduler up scheduler
+# 
+# Run scheduler in background:
+# docker-compose --profile scheduler up -d scheduler
