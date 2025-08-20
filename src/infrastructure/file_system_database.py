@@ -5,23 +5,24 @@ from typing import Union
 
 from src.infrastructure.custom_logger import create_logger
 
+LOGGER = create_logger(__name__)
+
 
 class FileSystemDatabase:
     """Class to handle file system database operations for storing and retrieving football match data."""
 
-    LOGGER = create_logger(__name__)
     matches_filename = "matches.json"
     competitions_filename = "competitions.json"
 
     def __init__(self, database_dir: str):
-        log = self.LOGGER.getChild("__init__")
-        log.info("Initializing FileSystemDatabase")
+        self.log = LOGGER.getChild("__init__")
+        self.log.info("Initializing FileSystemDatabase")
         self.__load_database(database_dir)
-        log.info("FileSystemDatabase initialized")
+        self.log.info("FileSystemDatabase initialized")
 
     def __load_database(self, database_dir: str):
         """Create a database directory if it does not exist."""
-        log = self.LOGGER.getChild("__create_database")
+        log = self.log.getChild("__create_database")
         self.db_path = database_dir
         if not os.path.exists(self.db_path):
             log.debug(f"Creating database {self.db_path}")
@@ -34,7 +35,7 @@ class FileSystemDatabase:
 
     def __load_entity(self, entity_filename: str) -> Union[list, dict, None]:
         """Load an entity from a JSON file."""
-        log = self.LOGGER.getChild("__load_entity")
+        log = self.log.getChild("__load_entity")
         file_path = os.path.join(self.db_path, entity_filename)
         log.debug(f"Loading entity from {file_path}")
         if not os.path.exists(file_path):
@@ -48,7 +49,7 @@ class FileSystemDatabase:
 
     def __load_competitions(self):
         """Load competitions from the JSON file."""
-        log = self.LOGGER.getChild("__load_competitions")
+        log = self.log.getChild("__load_competitions")
         competitions = self.__load_entity(self.competitions_filename)
         if competitions is None:
             log.debug(
@@ -60,7 +61,7 @@ class FileSystemDatabase:
 
     def __load_matches(self):
         """Load matches from the JSON file."""
-        log = self.LOGGER.getChild("__load_matches")
+        log = self.log.getChild("__load_matches")
         self.matches = {}
         matches = self.__load_entity(self.matches_filename)
         if matches is None:
@@ -73,7 +74,7 @@ class FileSystemDatabase:
 
     def _save_data(self, data: Union[list, dict], file_name: str):
         """Save data to a JSON file."""
-        log = self.LOGGER.getChild("_save_data")
+        log = self.log.getChild("_save_data")
         file_path = os.path.join(self.db_path, file_name)
         log.debug(f"Saving data to {file_path}")
         with open(file_path, "w", encoding="utf-8") as file:
@@ -82,7 +83,7 @@ class FileSystemDatabase:
 
     def save_matches(self, matches: list, competition_id: str):
         """Save matches to a JSON file."""
-        log = self.LOGGER.getChild("save_matches")
+        log = self.log.getChild("save_matches")
         log.info(
             f"Saving matches for competition {competition_id} to {self.matches_filename}"
         )
@@ -93,13 +94,13 @@ class FileSystemDatabase:
 
     def save_competitions(self, competitions: list):
         """Save competitions to a JSON file."""
-        log = self.LOGGER.getChild("save_competitions")
+        log = self.log.getChild("save_competitions")
         self._save_data(competitions, self.competitions_filename)
         log.info("Competitions successfully saved")
 
     def get_matches_from_team(self, team: str) -> list:
         """Get matches from a specific team."""
-        log = self.LOGGER.getChild("get_matches_from_team")
+        log = self.log.getChild("get_matches_from_team")
         log.info(f"Getting matches for team {team}")
         self.__load_competitions()
         self.__load_matches()
@@ -116,8 +117,9 @@ class FileSystemDatabase:
                 log.info(f"No matches found for competition {competition_id}")
                 continue
             for match in self.matches.get(competition_id, []):
-                home_team = match.get("homeTeam", {}).get("name", "")
-                away_team = match.get("awayTeam", {}).get("name", "")
+                home_team = match.get("homeTeam", {}).get("name", "").lower()
+                away_team = match.get("awayTeam", {}).get("name", "").lower()
+                team = team.lower()
                 utc_date = match.get("utcDate", "")
                 if team in home_team or team in away_team:
                     log.info(f"Match found {utc_date} {competition_name} - {home_team} x {away_team}")

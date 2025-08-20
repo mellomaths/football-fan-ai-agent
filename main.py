@@ -11,23 +11,14 @@ load_dotenv()
 LOGGER = create_logger(__name__)
 app = typer.Typer()
 
+DATABASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "db")
+
 
 @app.command()
 def load_database():
     """Load data for a specific entity."""
     job_load_database(
-        database_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)), "db")
-    )
-
-
-@app.command()
-def add_to_calendar(
-    team: str = typer.Argument(..., help="Name of the team to add matches for"),
-):
-    """Add matches for a specific team to the calendar."""
-    job_add_team_matches_to_calendar(
-        team=team,
-        database_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)), "db")
+        database_dir=DATABASE_DIR
     )
 
 
@@ -67,7 +58,7 @@ def add_team_to_calendar(
     try:
         result = job_add_team_matches_to_calendar(
             team=team,
-            database_dir=os.path.join(os.path.dirname(os.path.abspath(__file__)), "db"),
+            database_dir=DATABASE_DIR,
             calendar_id=calendar_id
         )
         

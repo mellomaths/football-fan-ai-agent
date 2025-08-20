@@ -2,18 +2,16 @@
 Google Calendar integration for Football Fan AI Agent.
 
 This module provides functionality to create football match events in Google Calendar.
-It handles multiple authentication methods: OAuth 2.0, Service Account, and Application Default Credentials.
+It uses OAuth 2.0 authentication for full calendar access.
 """
 
 import os
 import json
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google.oauth2 import service_account
-from google.auth import default
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
@@ -27,121 +25,33 @@ LOGGER = create_logger(__name__)
 
 
 class GoogleCalendarManager:
-    """Manages Google Calendar operations for football matches."""
+    """Manages Google Calendar operations for football matches using OAuth 2.0."""
     
-    def __init__(self, 
-                 credentials_path: Optional[str] = None, 
-                 token_path: str = "token.json",
-                 service_account_path: Optional[str] = None,
-                 use_adc: bool = False,
-                 api_key: Optional[str] = None):
+    def __init__(self, credentials_path: str, token_path: str = "token.json"):
         """
-        Initialize the Google Calendar manager with flexible authentication.
+        Initialize the Google Calendar manager with OAuth authentication.
         
         Args:
             credentials_path: Path to OAuth credentials file (credentials.json)
             token_path: Path to store/retrieve OAuth token
-            service_account_path: Path to service account JSON key file
-            use_adc: Use Application Default Credentials (gcloud, GCP metadata)
-            api_key: Google API key for read-only operations
         """
         self.credentials_path = credentials_path
         self.token_path = token_path
-        self.service_account_path = service_account_path
-        self.use_adc = use_adc
-        self.api_key = api_key
         self.service = None
         self.log = LOGGER.getChild("GoogleCalendarManager")
         
-        # Validate authentication method
-        auth_methods = sum([
-            bool(credentials_path),
-            bool(service_account_path),
-            use_adc,
-            bool(api_key)
-        ])
-        
-        if auth_methods == 0:
-            self.log.warning("No authentication method specified. Will try ADC first.")
-            self.use_adc = True
-        elif auth_methods > 1:
-            self.log.warning("Multiple authentication methods specified. Priority: ADC > Service Account > OAuth > API Key")
+        if not credentials_path:
+            raise ValueError("credentials_path is required for OAuth authentication")
     
     def authenticate(self) -> bool:
         """
-        Authenticate with Google Calendar API using the best available method.
+        Authenticate with Google Calendar API using OAuth 2.0.
         
         Returns:
             bool: True if authentication successful, False otherwise
         """
-        # Try authentication methods in order of preference
-        auth_methods = [
-            ("Application Default Credentials", self._authenticate_adc),
-            ("Service Account", self._authenticate_service_account),
-            ("OAuth 2.0", self._authenticate_oauth),
-            ("API Key", self._authenticate_api_key)
-        ]
-        
-        for method_name, auth_func in auth_methods:
-            if self._should_try_method(method_name):
-                self.log.info(f"Trying {method_name} authentication...")
-                try:
-                    if auth_func():
-                        self.log.info(f"Successfully authenticated using {method_name}")
-                        return True
-                except Exception as e:
-                    self.log.warning(f"{method_name} authentication failed: {e}")
-                    continue
-        
-        self.log.error("All authentication methods failed")
-        return False
-    
-    def _should_try_method(self, method_name: str) -> bool:
-        """Determine if a specific authentication method should be attempted."""
-        if method_name == "Application Default Credentials":
-            return self.use_adc
-        elif method_name == "Service Account":
-            return bool(self.service_account_path)
-        elif method_name == "OAuth 2.0":
-            return bool(self.credentials_path)
-        elif method_name == "API Key":
-            return bool(self.api_key)
-        return False
-    
-    def _authenticate_adc(self) -> bool:
-        """Authenticate using Application Default Credentials."""
-        try:
-            creds, project = default(scopes=SCOPES)
-            if creds and creds.valid:
-                self.service = build('calendar', 'v3', credentials=creds)
-                self.log.info(f"Using ADC from project: {project}")
-                return True
-            else:
-                self.log.warning("ADC credentials not valid")
-                return False
-        except Exception as e:
-            self.log.warning(f"ADC authentication failed: {e}")
-            return False
-    
-    def _authenticate_service_account(self) -> bool:
-        """Authenticate using service account credentials."""
-        if not self.service_account_path or not os.path.exists(self.service_account_path):
-            return False
-        
-        try:
-            creds = service_account.Credentials.from_service_account_file(
-                self.service_account_path, scopes=SCOPES
-            )
-            self.service = build('calendar', 'v3', credentials=creds)
-            self.log.info("Service account authentication successful")
-            return True
-        except Exception as e:
-            self.log.error(f"Service account authentication failed: {e}")
-            return False
-    
-    def _authenticate_oauth(self) -> bool:
-        """Authenticate using OAuth 2.0 flow."""
-        if not self.credentials_path or not os.path.exists(self.credentials_path):
+        if not os.path.exists(self.credentials_path):
+            self.log.error(f"Credentials file not found: {self.credentials_path}")
             return False
         
         creds = None
@@ -191,20 +101,6 @@ class GoogleCalendarManager:
             self.log.error(f"Failed to build calendar service with OAuth: {e}")
             return False
     
-    def _authenticate_api_key(self) -> bool:
-        """Authenticate using API key (read-only access)."""
-        if not self.api_key:
-            return False
-        
-        try:
-            # API key authentication only supports read operations
-            self.service = build('calendar', 'v3', developerKey=self.api_key)
-            self.log.info("API key authentication successful (read-only access)")
-            return True
-        except Exception as e:
-            self.log.error(f"API key authentication failed: {e}")
-            return False
-    
     def create_match_event(self, match_data: Dict[str, Any], calendar_id: str = "primary") -> Optional[str]:
         """
         Create a calendar event for a football match.
@@ -218,11 +114,6 @@ class GoogleCalendarManager:
         """
         if not self.service:
             self.log.error("Calendar service not initialized. Call authenticate() first.")
-            return None
-        
-        # Check if we have write access (API key is read-only)
-        if hasattr(self.service, 'developerKey'):
-            self.log.error("Cannot create events with API key authentication (read-only)")
             return None
         
         try:
@@ -311,11 +202,6 @@ class GoogleCalendarManager:
             self.log.error("Calendar service not initialized. Call authenticate() first.")
             return {"success": False, "error": "Service not initialized"}
         
-        # Check if we have write access
-        if hasattr(self.service, 'developerKey'):
-            self.log.error("Cannot create events with API key authentication (read-only)")
-            return {"success": False, "error": "API key authentication is read-only"}
-        
         if not matches:
             self.log.warning(f"No matches found for team: {team_name}")
             return {"success": True, "matches_found": 0, "events_created": 0}
@@ -396,11 +282,6 @@ class GoogleCalendarManager:
             self.log.error("Calendar service not initialized. Call authenticate() first.")
             return False
         
-        # Check if we have write access
-        if hasattr(self.service, 'developerKey'):
-            self.log.error("Cannot delete events with API key authentication (read-only)")
-            return False
-        
         try:
             self.service.events().delete(
                 calendarId=calendar_id,
@@ -418,30 +299,20 @@ class GoogleCalendarManager:
             return False
 
 
-def create_calendar_manager(credentials_path: Optional[str] = None,
-                           token_path: str = "token.json",
-                           service_account_path: Optional[str] = None,
-                           use_adc: bool = False,
-                           api_key: Optional[str] = None) -> GoogleCalendarManager:
+def create_calendar_manager(credentials_path: str, token_path: str = "token.json") -> GoogleCalendarManager:
     """
     Factory function to create and authenticate a Google Calendar manager.
     
     Args:
-        credentials_path: Path to OAuth credentials file
+        credentials_path: Path to OAuth credentials file (required)
         token_path: Path to store/retrieve OAuth token
-        service_account_path: Path to service account JSON key file
-        use_adc: Use Application Default Credentials
-        api_key: Google API key for read-only operations
         
     Returns:
         GoogleCalendarManager: Authenticated calendar manager instance
     """
     manager = GoogleCalendarManager(
         credentials_path=credentials_path,
-        token_path=token_path,
-        service_account_path=service_account_path,
-        use_adc=use_adc,
-        api_key=api_key
+        token_path=token_path
     )
     
     if manager.authenticate():
@@ -452,22 +323,22 @@ def create_calendar_manager(credentials_path: Optional[str] = None,
 
 def create_calendar_manager_from_env() -> GoogleCalendarManager:
     """
-    Create calendar manager using environment variables for authentication.
+    Create calendar manager using environment variables for OAuth authentication.
     
     Environment variables:
-    - GOOGLE_CALENDAR_CREDENTIALS_PATH: Path to OAuth credentials file
-    - GOOGLE_CALENDAR_TOKEN_PATH: Path to OAuth token file
-    - GOOGLE_CALENDAR_SERVICE_ACCOUNT_PATH: Path to service account key file
-    - GOOGLE_CALENDAR_USE_ADC: Use Application Default Credentials (true/false)
-    - GOOGLE_CALENDAR_API_KEY: Google API key for read-only access
+    - GOOGLE_CALENDAR_CREDENTIALS_PATH: Path to OAuth credentials file (required)
+    - GOOGLE_CALENDAR_TOKEN_PATH: Path to OAuth token file (optional, defaults to token.json)
     
     Returns:
         GoogleCalendarManager: Authenticated calendar manager instance
     """
+    credentials_path = os.getenv('GOOGLE_CALENDAR_CREDENTIALS_PATH')
+    if not credentials_path:
+        raise ValueError("GOOGLE_CALENDAR_CREDENTIALS_PATH environment variable is required")
+    
+    token_path = os.getenv('GOOGLE_CALENDAR_TOKEN_PATH', 'token.json')
+    
     return create_calendar_manager(
-        credentials_path=os.getenv('GOOGLE_CALENDAR_CREDENTIALS_PATH'),
-        token_path=os.getenv('GOOGLE_CALENDAR_TOKEN_PATH', 'token.json'),
-        service_account_path=os.getenv('GOOGLE_CALENDAR_SERVICE_ACCOUNT_PATH'),
-        use_adc=os.getenv('GOOGLE_CALENDAR_USE_ADC', 'false').lower() == 'true',
-        api_key=os.getenv('GOOGLE_CALENDAR_API_KEY')
+        credentials_path=credentials_path,
+        token_path=token_path
     )

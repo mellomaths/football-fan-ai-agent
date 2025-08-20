@@ -238,11 +238,13 @@ docker-help:
     @docker-compose config --services
 
 calendar-help:
-    @echo "Google Calendar Authentication Methods:"
-    @echo "  1. OAuth 2.0 - Interactive browser authentication"
-    @echo "  2. Service Account - Automated, no browser interaction"
-    @echo "  3. Application Default Credentials - Uses gcloud CLI"
-    @echo "  4. API Key - Simple read-only access"
+    @echo "Google Calendar Authentication:"
+    @echo "  OAuth 2.0 - Interactive browser authentication"
+    @echo ""
+    @echo "Setup:"
+    @echo "  1. Download credentials.json from Google Cloud Console"
+    @echo "  2. Set GOOGLE_CALENDAR_CREDENTIALS_PATH in .env"
+    @echo "  3. Run calendar commands - authentication will happen automatically"
     @echo ""
     @echo "See GOOGLE_CALENDAR_AUTH.md for detailed setup instructions."
 

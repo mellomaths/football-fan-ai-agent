@@ -211,3 +211,7 @@ __marimo__/
 
 # Database files
 db/
+
+# Google API files
+credentials.json
+token.json

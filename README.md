@@ -16,7 +16,7 @@ An intelligent AI agent powered by DeepSeek API that helps football fans search 
 - **Automated Scheduler**: Periodic data synchronization and calendar updates
 - **Google Calendar Integration**: Add football matches to your calendar automatically
 - **Docker Ready**: Containerized deployment with multiple entrypoints
-- **Flexible Authentication**: Multiple Google Calendar authentication methods (OAuth 2.0, Service Account, ADC, API Key)
+- **OAuth Authentication**: Google Calendar integration using OAuth 2.0
 
 ## 📋 Prerequisites
 
@@ -121,30 +121,15 @@ docker-compose --profile scheduler up scheduler
 
 ## 🔐 Google Calendar Authentication
 
-The project supports **4 different authentication methods**:
-
-1. **OAuth 2.0** - Interactive browser authentication (development)
-2. **Service Account** - Automated, no browser interaction (production)
-3. **Application Default Credentials** - Uses gcloud CLI (GCP environments)
-4. **API Key** - Simple read-only access (basic operations)
+The project uses **OAuth 2.0 authentication** for Google Calendar integration.
 
 See [GOOGLE_CALENDAR_AUTH.md](GOOGLE_CALENDAR_AUTH.md) for detailed setup instructions.
 
 ### Quick Authentication Setup
 ```env
-# Choose ONE method in your .env file:
-
-# Method 1: OAuth 2.0
+# OAuth 2.0 Authentication (Required)
 GOOGLE_CALENDAR_CREDENTIALS_PATH=credentials.json
-
-# Method 2: Service Account
-GOOGLE_CALENDAR_SERVICE_ACCOUNT_PATH=service-account-key.json
-
-# Method 3: Application Default Credentials
-GOOGLE_CALENDAR_USE_ADC=true
-
-# Method 4: API Key (read-only)
-GOOGLE_CALENDAR_API_KEY=your_api_key
+GOOGLE_CALENDAR_TOKEN_PATH=token.json
 ```
 
 ## ⏰ Scheduler Service
