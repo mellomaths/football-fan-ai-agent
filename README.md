@@ -11,324 +11,328 @@ An intelligent AI agent powered by DeepSeek API that helps football fans search 
 
 ## 🚀 Features
 
-- **🔍 Game Search**: Find upcoming football matches across major leagues
-- **🏆 Team-specific Search**: Get upcoming games for your favorite team
-- **🌍 League Search**: Find games in specific competitions
-- **ℹ️ Team Information**: Get detailed team stats and details
-- **💬 AI Chat**: Chat with an AI expert about football using DeepSeek
-- **📅 Real-time Data**: Integration with football-data.org API
-- **🕐 Automated Scheduler**: Periodic data updates and maintenance
-- **🐳 Docker Ready**: Full containerization with multi-service support
+- **AI-Powered Football Chat**: Intelligent conversations about football using DeepSeek API
+- **Match Database**: Comprehensive database of football matches and competitions
+- **Automated Scheduler**: Periodic data synchronization and calendar updates
+- **Google Calendar Integration**: Add football matches to your calendar automatically
+- **Docker Ready**: Containerized deployment with multiple entrypoints
+- **Flexible Authentication**: Multiple Google Calendar authentication methods (OAuth 2.0, Service Account, ADC, API Key)
 
-## 🛠️ Installation
+## 📋 Prerequisites
 
-### Prerequisites
+- Python 3.13+
+- Docker and Docker Compose
+- Google Cloud account (for Google Calendar integration)
+- Football-data.org API key (optional, for live data)
 
-- **Docker** and **Docker Compose** installed
-- **Python 3.13+** (for local development)
-- **DeepSeek API key**
-- **Football-data.org API key** for real match data
+## 🚀 Quick Start with Docker
 
-### Quick Start with Docker
+### 1. Clone and Setup
+```bash
+git clone <repository-url>
+cd football-fan-ai-agent
+cp env.template .env
+# Edit .env with your API keys
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd football-fan-ai-agent
-   ```
+### 2. Build and Run
+```bash
+# Build the Docker image
+./docker-run.sh build
 
-2. **Set up environment variables**
-   ```bash
-   # Copy the template and edit with your API keys
-   cp .env.template .env
-   # Edit .env with your actual API keys
-   ```
+# Run the default service (shows help)
+./docker-run.sh run
 
-3. **Build and run**
-   ```bash
-   # Build the Docker image
-   ./docker-run.sh build
-   
-   # Run the application
-   ./docker-run.sh run
-   ```
+# Load database data
+./docker-run.sh load-db
 
-### Local Development Setup
+# Add team matches to calendar
+./docker-run.sh add-calendar "Team Name"
+```
 
-1. **Install dependencies using uv**
-   ```bash
-   uv sync
-   ```
+### 3. Google Calendar Setup
+Choose your preferred authentication method:
 
-2. **Set up environment variables**
-   Create a `.env` file in the project root:
-   ```env
-   DEEPSEEK_API_KEY=your_deepseek_api_key_here
-   FOOTBALL_DATA_API_KEY=your_football_data_api_key_here
-   FOOTBALL_DATA_API_BASE_URL=https://api.football-data.org/v4
-   ```
+```bash
+# Show setup guide
+./docker-run.sh setup-calendar
 
-3. **Get API Keys**
-   - **DeepSeek API**: Sign up at [DeepSeek](https://platform.deepseek.com/)
-   - **Football Data API**: Get a free API key from [football-data.org](https://www.football-data.org/)
+# List available calendars
+./docker-run.sh calendar-list
+
+# Add team matches to Google Calendar
+./docker-run.sh add-team-calendar "Flamengo"
+```
 
 ## 🐳 Docker Usage
 
-### Available Commands
-
+### Using the Shell Script
 ```bash
-# Build the image
-./docker-run.sh build
+# Available commands
+./docker-run.sh help
 
-# Run default service (help)
-./docker-run.sh run
-
-# Load database
+# Database operations
 ./docker-run.sh load-db
 
-# Add team to calendar
-./docker-run.sh add-calendar "Manchester United"
+# Calendar operations
+./docker-run.sh calendar-list
+./docker-run.sh add-team-calendar "Team Name"
+
+# Scheduler service
+./docker-run.sh scheduler-bg
+./docker-run.sh scheduler-logs
+./docker-run.sh scheduler-stop
 
 # Interactive shell
 ./docker-run.sh shell
-
-# Scheduler management
-./docker-run.sh scheduler-bg      # Start scheduler in background
-./docker-run.sh scheduler-stop    # Stop scheduler
-./docker-run.sh scheduler-logs    # View scheduler logs
-
-# Management
-./docker-run.sh status            # Show service status
-./docker-run.sh logs              # View all logs
-./docker-run.sh stop              # Stop all containers
-./docker-run.sh clean             # Clean up everything
 ```
 
-### Alternative: Using Make
-
+### Using Make
 ```bash
-# Show all available commands
-make help
-
 # Build and run
 make build
 make run
 
-# Scheduler operations
+# Calendar operations
+make calendar-list
+make add-team-calendar TEAM='Flamengo'
+
+# Scheduler
 make scheduler-bg
 make scheduler-logs
-make scheduler-stop
 ```
 
-### Docker Compose Profiles
-
-- **`default`**: Main service (help command)
-- **`commands`**: All command services (load-db, add-calendar, shell, hello)
-- **`scheduler`**: Scheduler service for periodic jobs
-
+### Using Docker Compose Directly
 ```bash
-# Run specific profiles
-docker-compose --profile default up
-docker-compose --profile commands up
-docker-compose --profile scheduler up -d scheduler
+# Default service
+docker-compose up football-fan-ai
+
+# Commands profile
+docker-compose --profile commands run --rm load-database
+docker-compose --profile commands run --rm add-to-calendar "Team Name"
+
+# Calendar profile
+docker-compose --profile calendar run --rm calendar-list
+docker-compose --profile calendar run --rm add-team-to-calendar
+
+# Scheduler profile
+docker-compose --profile scheduler up scheduler
 ```
 
-## 🕐 Scheduler Service
+## 🔐 Google Calendar Authentication
 
-The scheduler automatically runs periodic jobs to keep your football data up-to-date:
+The project supports **4 different authentication methods**:
 
-- **Database Loading**: Every Monday at 10:30 AM
-- **Data Synchronization**: Automatic updates from football-data.org
-- **Persistent Storage**: Data stored in mounted `db/` directory
+1. **OAuth 2.0** - Interactive browser authentication (development)
+2. **Service Account** - Automated, no browser interaction (production)
+3. **Application Default Credentials** - Uses gcloud CLI (GCP environments)
+4. **API Key** - Simple read-only access (basic operations)
 
-### Scheduler Commands
+See [GOOGLE_CALENDAR_AUTH.md](GOOGLE_CALENDAR_AUTH.md) for detailed setup instructions.
+
+### Quick Authentication Setup
+```env
+# Choose ONE method in your .env file:
+
+# Method 1: OAuth 2.0
+GOOGLE_CALENDAR_CREDENTIALS_PATH=credentials.json
+
+# Method 2: Service Account
+GOOGLE_CALENDAR_SERVICE_ACCOUNT_PATH=service-account-key.json
+
+# Method 3: Application Default Credentials
+GOOGLE_CALENDAR_USE_ADC=true
+
+# Method 4: API Key (read-only)
+GOOGLE_CALENDAR_API_KEY=your_api_key
+```
+
+## ⏰ Scheduler Service
+
+The scheduler runs periodic jobs automatically:
 
 ```bash
-# Start scheduler
+# Start scheduler in background
 ./docker-run.sh scheduler-bg
 
-# Monitor logs
+# View scheduler logs
 ./docker-run.sh scheduler-logs
 
 # Stop scheduler
 ./docker-run.sh scheduler-stop
 ```
 
-## 🎯 Application Usage
+**Scheduled Jobs:**
+- Database loading: Every Monday at 10:30 AM
+- Calendar updates: On-demand via commands
 
-### Run the Application
+## 📱 Application Usage
 
+### Available Commands
 ```bash
-# Using Docker
-./docker-run.sh run
+# Core operations
+python main.py load-database
+python main.py add-to-calendar "Team Name"
 
-# Local development
+# Google Calendar operations
+python main.py calendar-list
+python main.py add-team-to-calendar "Team Name"
+python main.py setup-calendar
+
+# Help
 python main.py --help
 ```
 
-### Available Commands
-
+### Docker Commands
 ```bash
-# Load database
-python main.py load-database
-
-# Add team to calendar
-python main.py add-to-calendar "Team Name"
-
-# Hello command
-python main.py hello "Your Name"
-```
-
-### Example Output
-
-```txt
-$ python main.py --help
-
-Usage: main.py [OPTIONS] COMMAND [ARGS]...
-
-╭─ Commands ──────────────────────────────────────────────────────────╮
-│ load-database     Load data for a specific entity.                  │
-│ add-to-calendar   Add matches for a specific team to the calendar.  │
-│ hello             Say hello to NAME.                                │
-╰─────────────────────────────────────────────────────────────────────╯
+# All operations available via Docker
+./docker-run.sh help
+make help
 ```
 
 ## 🏗️ Project Structure
 
 ```
 football-fan-ai-agent/
-├── db/                           # Database JSON files (mounted in Docker)
-├── src/
-│   ├── agents/                   # AI Agents (DeepSeek, FootballData, Gemini)
-│   ├── cron/                     # Periodic job functions
-│   ├── infrastructure/           # Database and logging utilities
-│   └── config.py                 # Configuration constants
-├── main.py                       # Main application entry point
-├── scheduler.py                  # Scheduler for periodic tasks
-├── Dockerfile                    # Docker image definition
-├── docker-compose.yml            # Multi-service Docker configuration
-├── docker-run.sh                 # Docker management script
-├── Makefile                      # Alternative Docker interface
-├── pyproject.toml                # Project dependencies and configuration
-├── env.template                  # Environment variables template
-└── README.md                     # This file
+├── 📁 src/
+│   ├── 📁 agents/           # AI and data agents
+│   ├── 📁 cron/            # Scheduled jobs
+│   ├── 📁 infrastructure/  # Core services
+│   └── config.py           # Configuration
+├── 📁 db/                  # Database files
+├── 🐳 Dockerfile           # Container definition
+├── 🐳 docker-compose.yml   # Multi-service orchestration
+├── 🐳 docker-run.sh        # Convenience script
+├── 🐳 Makefile             # Alternative interface
+├── 📄 env.template         # Environment configuration
+├── 📄 GOOGLE_CALENDAR_SETUP.md    # Calendar setup guide
+├── 📄 GOOGLE_CALENDAR_AUTH.md     # Authentication methods
+└── 📄 README.md            # This file
 ```
 
 ## ⚙️ Configuration
 
 ### Environment Variables
+Copy `env.template` to `.env` and configure:
 
-Create a `.env` file based on `env.template`:
-
-```env
-# Required for scheduler and data loading
-FOOTBALL_DATA_API_KEY=your_football_data_api_key_here
-FOOTBALL_DATA_API_BASE_URL=https://api.football-data.org/v4
-
-# Optional: AI features
-DEEPSEEK_API_KEY=your_deepseek_api_key_here
-
-# Optional: Logging
-LOG_LEVEL=INFO
+```bash
+# Copy the template and edit with your API keys
+cp env.template .env
+# Edit .env with your actual API keys
 ```
 
-### Supported Competitions
+**Required for Google Calendar:**
+- Choose one authentication method from the template
+- See [GOOGLE_CALENDAR_AUTH.md](GOOGLE_CALENDAR_AUTH.md) for details
 
-Currently configured for Brazilian football:
-- Campeonato Brasileiro
-- Libertadores
-- Copa do Brasil
-
-## 📊 Data Sources
-
-- **Football-data.org**: Real match data, team information, and schedules
-- **Local Database**: JSON-based file system database for persistence
-- **Automated Updates**: Scheduled data synchronization via scheduler
+**Supported Competitions:**
+- Premier League
+- La Liga
+- Bundesliga
+- Serie A
+- Ligue 1
+- And more (configurable in `src/config.py`)
 
 ## 🚨 Troubleshooting
 
-### Docker Issues
-
-1. **Container won't start**
-   ```bash
-   # Check logs
-   ./docker-run.sh logs
-   
-   # Validate configuration
-   ./test-docker.sh
-   ```
-
-2. **Scheduler not working**
-   ```bash
-   # Check scheduler status
-   ./docker-run.sh status
-   
-   # View scheduler logs
-   ./docker-run.sh scheduler-logs
-   ```
-
-3. **Environment variables not loading**
-   - Ensure `.env` file exists in project root
-   - Check variable names match `env.template`
-   - Restart containers after changes
-
 ### Common Issues
 
-1. **API Key Errors**
-   - Verify API keys in `.env` file
-   - Check API key validity and limits
-   - Ensure correct environment variable names
+#### Docker Issues
+```bash
+# Check service status
+./docker-run.sh status
 
-2. **Database Issues**
-   - Check `db/` directory permissions
-   - Verify volume mounts in Docker
-   - Run `./docker-run.sh load-db` to refresh data
+# View logs
+./docker-run.sh logs
 
-3. **Scheduler Problems**
-   - Check if scheduler container is running
-   - Verify timezone settings (container uses UTC)
-   - Check logs for specific error messages
+# Clean up and restart
+./docker-run.sh clean
+./docker-run.sh build
+```
 
-## 🔧 Development
+#### Google Calendar Issues
+```bash
+# Check authentication
+./docker-run.sh calendar-list
+
+# View setup guide
+./docker-run.sh setup-calendar
+
+# Check environment variables
+cat .env | grep GOOGLE_CALENDAR
+```
+
+#### Scheduler Issues
+```bash
+# Check scheduler status
+./docker-run.sh scheduler-logs
+
+# Restart scheduler
+./docker-run.sh scheduler-stop
+./docker-run.sh scheduler-bg
+```
+
+### Debug Commands
+```bash
+# Interactive debugging
+./docker-run.sh shell
+
+# Direct Docker access
+docker-compose --profile commands run --rm shell
+
+# Check all services
+docker-compose ps
+```
+
+## 🛠️ Development
 
 ### Adding New Commands
-
-1. **Add to main.py**
-   ```python
-   @app.command()
-   def new_command():
-       """Description of new command."""
-       # Implementation here
-   ```
-
-2. **Add to Docker services**
-   - Update `docker-compose.yml`
-   - Add to `docker-run.sh`
-   - Update `Makefile`
+1. Add command to `main.py` using Typer decorators
+2. Add corresponding service to `docker-compose.yml`
+3. Update `docker-run.sh` and `Makefile`
+4. Test with Docker
 
 ### Adding New Scheduled Jobs
+1. Create job function in `src/cron/jobs.py`
+2. Add schedule in `scheduler.py`
+3. Test with scheduler service
 
-1. **Create job function in `src/cron/jobs.py`**
-2. **Schedule in `scheduler.py`**
-3. **Restart scheduler service**
+### Local Development
+```bash
+# Install dependencies
+uv sync
+
+# Run locally
+python main.py --help
+
+# Run with Docker
+./docker-run.sh shell
+```
+
+## 📚 Documentation
+
+- [Google Calendar Setup](GOOGLE_CALENDAR_SETUP.md) - Complete setup guide
+- [Google Calendar Authentication](GOOGLE_CALENDAR_AUTH.md) - All auth methods
+- [Docker Usage](docker-compose.yml) - Service definitions and examples
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Test with Docker: `./test-docker.sh`
-5. Submit a Pull Request
+4. Test with Docker
+5. Submit a pull request
 
-## 📝 License
+## 📄 License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- [DeepSeek](https://platform.deepseek.com/) for AI capabilities
-- [Football-data.org](https://www.football-data.org/) for football data APIs
-- Docker community for containerization tools
+- [DeepSeek](https://www.deepseek.com/) for AI capabilities
+- [Football-data.org](https://www.football-data.org/) for match data
+- [Google Calendar API](https://developers.google.com/calendar) for calendar integration
+- [Docker](https://www.docker.com/) for containerization
 
 ---
 

@@ -1,7 +1,7 @@
 # Football Fan AI Agent Makefile
 # Provides simple commands for Docker operations
 
-.PHONY: help build run load-db add-calendar shell hello scheduler scheduler-bg scheduler-stop scheduler-logs logs status stop clean all-commands
+.PHONY: help build run load-db add-calendar shell hello scheduler scheduler-bg scheduler-stop scheduler-logs calendar-list add-team-calendar setup-calendar logs status stop clean all-commands
 
 # Default target
 help:
@@ -21,6 +21,11 @@ help:
 	@echo "  make scheduler-stop - Stop scheduler service"
 	@echo "  make scheduler-logs - Show scheduler logs"
 	@echo ""
+	@echo "Google Calendar:"
+	@echo "  make calendar-list  - List available Google Calendars"
+	@echo "  make add-team-calendar - Add team matches to Google Calendar (set TEAM=name)"
+	@echo "  make setup-calendar - Show Google Calendar setup guide"
+	@echo ""
 	@echo "Management:"
 	@echo "  make logs           - Show container logs"
 	@echo "  make status         - Show service status"
@@ -32,6 +37,7 @@ help:
 	@echo "  make add-calendar TEAM='Manchester United'"
 	@echo "  make shell"
 	@echo "  make scheduler-bg"
+	@echo "  make add-team-calendar TEAM='Flamengo'"
 
 # Build the Docker image
 build:
@@ -83,6 +89,26 @@ scheduler-stop:
 scheduler-logs:
 	docker-compose --profile scheduler logs -f scheduler
 
+# List Google Calendars
+calendar-list:
+	docker-compose --profile calendar run --rm calendar-list
+
+# Add team to Google Calendar (requires TEAM variable)
+add-team-calendar:
+	@if [ -z "$(TEAM)" ]; then \
+		echo "Error: TEAM variable is required"; \
+		echo "Usage: make add-team-calendar TEAM='Team Name'"; \
+		exit 1; \
+	fi
+	docker-compose --profile calendar run --rm \
+		-e TEAM_NAME="$(TEAM)" \
+		add-team-to-calendar \
+		python main.py add-team-to-calendar "$(TEAM)"
+
+# Show Google Calendar setup guide
+setup-calendar:
+	docker-compose --profile calendar run --rm setup-calendar
+
 # Show logs
 logs:
 	docker-compose logs -f
@@ -97,6 +123,9 @@ status:
 	@echo ""
 	@echo "Scheduler Profile Services:"
 	@docker-compose ps --services --filter "profile=scheduler"
+	@echo ""
+	@echo "Calendar Profile Services:"
+	@docker-compose ps --services --filter "profile=calendar"
 	@echo ""
 	@echo "All Running Containers:"
 	@docker-compose ps

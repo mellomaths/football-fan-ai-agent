@@ -51,17 +51,25 @@ show_help() {
     echo "  clean           Remove all containers and images"
     echo "  help            Show this help message"
     echo ""
+    echo "Google Calendar Commands:"
+    echo "  calendar-list   List available Google Calendars"
+    echo "  add-team-calendar Add team matches to Google Calendar"
+    echo "  setup-calendar  Show Google Calendar setup guide"
+    echo ""
     echo "Examples:"
     echo "  $0 build"
     echo "  $0 load-db"
     echo "  $0 add-calendar 'Manchester United'"
     echo "  $0 shell"
     echo "  $0 scheduler"
+    echo "  $0 calendar-list"
+    echo "  $0 add-team-calendar 'Flamengo'"
     echo ""
     echo "Docker Compose Profiles:"
     echo "  default:        Main service (help command)"
     echo "  commands:       All command services (load-db, add-calendar, shell, hello)"
     echo "  scheduler:      Scheduler service for running periodic jobs"
+    echo "  calendar:       Google Calendar integration services"
 }
 
 # Function to build the image
@@ -137,6 +145,33 @@ show_scheduler_logs() {
     docker-compose --profile scheduler logs -f scheduler
 }
 
+# Function to list Google Calendars
+list_calendars() {
+    print_info "Listing available Google Calendars..."
+    docker-compose --profile calendar run --rm calendar-list
+}
+
+# Function to add team to Google Calendar
+add_team_to_google_calendar() {
+    if [ -z "$1" ]; then
+        print_error "Team name is required!"
+        echo "Usage: $0 add-team-calendar 'Team Name'"
+        exit 1
+    fi
+    
+    print_info "Adding team '$1' matches to Google Calendar..."
+    docker-compose --profile calendar run --rm \
+        -e TEAM_NAME="$1" \
+        add-team-to-calendar \
+        python main.py add-team-to-calendar "$1"
+}
+
+# Function to show calendar setup guide
+show_calendar_setup() {
+    print_info "Showing Google Calendar setup guide..."
+    docker-compose --profile calendar run --rm setup-calendar
+}
+
 # Function to show logs
 show_logs() {
     print_info "Showing logs for all services..."
@@ -155,6 +190,9 @@ show_status() {
     echo ""
     print_header "Scheduler Profile Services:"
     docker-compose ps --services --filter "profile=scheduler"
+    echo ""
+    print_header "Calendar Profile Services:"
+    docker-compose ps --services --filter "profile=calendar"
     echo ""
     print_header "All Running Containers:"
     docker-compose ps
@@ -217,6 +255,15 @@ case "${1:-help}" in
         ;;
     "scheduler-logs")
         show_scheduler_logs
+        ;;
+    "calendar-list")
+        list_calendars
+        ;;
+    "add-team-calendar")
+        add_team_to_google_calendar "$2"
+        ;;
+    "setup-calendar")
+        show_calendar_setup
         ;;
     "logs")
         show_logs

@@ -6,6 +6,7 @@ from src.agents.football_data_agent import FootballDataAgent
 from src.config import COMPETITIONS_TO_LOAD
 from src.infrastructure.custom_logger import create_logger
 from src.infrastructure.file_system_database import FileSystemDatabase
+from src.infrastructure.google_calendar import create_calendar_manager_from_env
 
 LOGGER = create_logger(__name__)
 DATABASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "db")
@@ -55,21 +56,72 @@ def job_load_database(database_dir: str = None, month: int = None, year: int = N
     log.info("Job completed successfully")
 
 
-def job_add_team_matches_to_calendar(team: str, database_dir: str = None):
+def job_add_team_matches_to_calendar(team: str, database_dir: str = None, 
+                                    calendar_id: str = "primary"):
     """
-    Job to get matches from a specific team.
-    This function is a placeholder for future implementation.
+    Job to add matches from a specific team to Google Calendar.
+    
+    Args:
+        team: Name of the team to add matches for
+        database_dir: Directory containing the database files
+        calendar_id: Google Calendar ID to add events to (default: primary)
+        
+    Returns:
+        Dict: Summary of calendar events created
     """
     if database_dir is None:
         database_dir = DATABASE_DIR
-    log = LOGGER.getChild("job_get_matches_from_team")
-    log.info(f"Getting matches for team: {team}")
-    db = FileSystemDatabase(
-        database_dir=database_dir
-    )
-    matches = db.get_matches_from_team(team)
-    if not matches:
-        log.warning(f"No matches found for team {team}")
-        return []
-    log.info(f"Found {len(matches)} matches for team {team}")
-    return None
+    
+    log = LOGGER.getChild("job_add_team_matches_to_calendar")
+    log.info(f"Adding matches for team: {team} to Google Calendar")
+    
+    try:
+        # Get matches from database
+        db = FileSystemDatabase(database_dir=database_dir)
+        matches = db.get_matches_from_team(team)
+        
+        if not matches:
+            log.warning(f"No matches found for team {team}")
+            return {
+                "success": True,
+                "team": team,
+                "matches_found": 0,
+                "events_created": 0,
+                "message": "No matches found for this team"
+            }
+        
+        log.info(f"Found {len(matches)} matches for team {team}")
+        
+        # Initialize Google Calendar manager using environment variables
+        try:
+            calendar_manager = create_calendar_manager_from_env()
+            log.info("Successfully authenticated with Google Calendar")
+        except Exception as e:
+            log.error(f"Failed to authenticate with Google Calendar: {e}")
+            return {
+                "success": False,
+                "team": team,
+                "matches_found": len(matches),
+                "events_created": 0,
+                "error": f"Authentication failed: {str(e)}"
+            }
+        
+        # Create calendar events for all matches
+        result = calendar_manager.create_team_matches_events(matches, team, calendar_id)
+        
+        if result["success"]:
+            log.info(f"Successfully created {result['events_created']} calendar events for {team}")
+        else:
+            log.error(f"Failed to create calendar events: {result.get('error', 'Unknown error')}")
+        
+        return result
+        
+    except Exception as e:
+        log.error(f"Unexpected error in job_add_team_matches_to_calendar: {e}")
+        return {
+            "success": False,
+            "team": team,
+            "matches_found": 0,
+            "events_created": 0,
+            "error": f"Unexpected error: {str(e)}"
+        }
