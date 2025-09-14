@@ -1,7 +1,13 @@
+from contextlib import asynccontextmanager
+from typing import AsyncIterator
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
+from fastapi_cache import FastAPICache
+from fastapi_cache.backends.redis import RedisBackend
+from fastapi_cache.decorator import cache
+from redis import asyncio as aioredis
 
 from api import router as api_router
 from infrastructure.logger import create_logger
@@ -10,6 +16,15 @@ from models.up_response import UpResponse
 
 settings = get_settings()
 logger = create_logger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    redis = aioredis.from_url(settings.redis.url)
+    FastAPICache.init(RedisBackend(redis), prefix="fastapi-cache")
+    yield
+
+
 app = FastAPI(
     title=settings.app.name,
     version=settings.app.version,

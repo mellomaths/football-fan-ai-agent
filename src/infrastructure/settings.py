@@ -75,6 +75,23 @@ class PostgresSettings(BaseModel):
         return f"{self.dialect}://{self.username}:{self.password}@{self.host}:{self.port}/{self.database_name}"
 
 
+class RedisSettings(BaseModel):
+    """
+    Redis settings.
+    """
+    host: str = "localhost"
+    port: int = 6379
+    password: str = "redis"
+    database: int = 0
+
+    @property
+    def url(self):
+        """
+        Get the redis URL.
+        """
+        return f"redis://{self.host}:{self.port}/{self.database}"
+
+
 class CorsSettings(BaseModel):
     """
     CORS settings.

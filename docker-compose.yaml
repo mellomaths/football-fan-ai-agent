@@ -9,6 +9,7 @@ services:
     environment:
       - PY_ENV=production
       - POSTGRES__HOST=192.168.1.100
+      - REDIS__HOST=192.168.1.100
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/up"]
       interval: 30s

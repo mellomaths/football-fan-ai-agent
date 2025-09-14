@@ -1,4 +1,5 @@
 from fastapi import APIRouter, status
+from fastapi_cache.decorator import cache
 from starlette.responses import JSONResponse
 
 from infrastructure.logger import create_logger
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/matches", tags=["matches"], redirect_slashes=False)
     status_code=status.HTTP_200_OK,
     response_model=list[UpcomingMatchesResponse],
 )
+@cache(expire=86400)
 def get_upcoming_matches(team_name: Team):
     log = LOGGER.getChild("get_upcoming_matches")
     log.info(f"Getting upcoming matches for team {team_name}")
