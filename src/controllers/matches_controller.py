@@ -18,7 +18,7 @@ router = APIRouter(prefix="/matches", tags=["matches"], redirect_slashes=False)
     response_model=list[UpcomingMatchesResponse],
 )
 @cache(expire=86400)
-def get_upcoming_matches(team_name: Team):
+async def get_upcoming_matches(team_name: Team):
     log = LOGGER.getChild("get_upcoming_matches")
     log.info(f"Getting upcoming matches for team {team_name}")
     espn_scrapper = EspnScrapper()
