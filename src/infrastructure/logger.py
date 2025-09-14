@@ -1,5 +1,7 @@
 import logging
 
+from infrastructure.settings import get_settings
+
 
 def create_logger(
     name: str,
@@ -10,10 +12,11 @@ def create_logger(
     Create a custom logger for the application.
     The logger will log messages to both the console and a file.
     """
+    settings = get_settings()
     logger = logging.getLogger(name)
     logger.setLevel(logging.DEBUG)  # capture all levels DEBUG and above
     formatter = logging.Formatter(
-        fmt="%(asctime)s - %(levelname)s - %(name)s - %(message)s",
+        fmt=settings.logger.fmt,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
@@ -31,7 +34,7 @@ def create_logger(
 
     # File handler
     if add_file_handler:
-        file_handler = logging.FileHandler("app.log", mode="a")
+        file_handler = logging.FileHandler(settings.logger.file, mode="a")
         file_handler.setLevel(logging.DEBUG)  # log everything into the file
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
