@@ -79,6 +79,7 @@ class RedisSettings(BaseModel):
     """
     Redis settings.
     """
+
     host: str = "localhost"
     port: int = 6379
     password: str = "redis"

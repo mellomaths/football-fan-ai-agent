@@ -32,11 +32,13 @@ src/
 - **Match Scraping**: Fetches football match data from ESPN using both API and HTML scraping
 - **Multi-Team Support**: Supports 20 Brazilian football teams with enum-based validation
 - **Dual Scraping Strategy**: Uses ESPN API as primary method with HTML scraping as fallback
+- **Redis Caching**: Built-in caching with Redis backend for improved performance
 - **Docker Support**: Containerized application with Docker Compose
 - **Health Checks**: Built-in health monitoring endpoints
 - **CORS Support**: Configurable Cross-Origin Resource Sharing
 - **Structured Logging**: Comprehensive logging with file rotation
 - **Development Tools**: Justfile with convenient commands for linting, Docker operations, and development
+- **Application Lifespan Management**: Proper startup and shutdown handling with Redis connection management
 
 ## 🛠️ Technology Stack
 
@@ -45,14 +47,17 @@ src/
 - **Web Server**: Uvicorn
 - **Data Validation**: Pydantic
 - **Web Scraping**: Requests + BeautifulSoup4
+- **Caching**: Redis with FastAPI-Cache2
 - **Containerization**: Docker + Docker Compose
 - **Package Management**: UV
 - **Database**: PostgreSQL (configured but not actively used)
+- **Cache Backend**: Redis
 
 ## 📋 Prerequisites
 
 - Python 3.12+
 - Docker & Docker Compose (for containerized deployment)
+- Redis server (for caching)
 - UV package manager
 - Just (optional, for development commands)
 
@@ -79,6 +84,9 @@ src/
    - API Base URL: `http://localhost:3002/football-fan`
    - Health Check: `http://localhost:3002/football-fan/up`
    - API Documentation: `http://localhost:3002/football-fan/docs`
+   - **Available Servers**:
+     - HomePi: `http://api.homepi.net/football-fan`
+     - Local: `http://localhost:3002`
 
 ### Local Development
 
@@ -96,6 +104,9 @@ src/
    - API Base URL: `http://localhost:3000/football-fan`
    - Health Check: `http://localhost:3000/football-fan/up`
    - API Documentation: `http://localhost:3000/football-fan/docs`
+   - **Available Servers**:
+     - HomePi: `http://api.homepi.net/football-fan`
+     - Local: `http://localhost:3002`
 
 ## 📚 API Endpoints
 
@@ -117,10 +128,15 @@ Returns the application status.
 GET /football-fan/api/v1/matches/{team_name}/upcoming
 ```
 
-Fetches upcoming matches for a specific team.
+Fetches upcoming matches for a specific team. **Results are cached for 24 hours** to improve performance.
 
 **Parameters:**
 - `team_name` (enum): Name of the team (supports 20 Brazilian teams including FLAMENGO, PALMEIRAS, CORINTHIANS, etc.)
+
+**Cache Information:**
+- **Cache Duration**: 24 hours (86400 seconds)
+- **Cache Backend**: Redis
+- **Cache Key**: `fastapi-cache:matches:{team_name}:upcoming`
 
 **Response:**
 ```json
@@ -209,6 +225,7 @@ The application uses a dual scraping approach with **HTML scraping as the primar
 - **External Port**: 3002
 - **Health Check**: HTTP GET /up
 - **Environment**: production
+- **External Dependencies**: PostgreSQL and Redis (configured to connect to 192.168.1.100)
 
 ## 📊 Monitoring
 
@@ -224,6 +241,33 @@ The application includes built-in health monitoring:
 - **Level**: TRACE
 - **Rotation**: 1MB files, 5 backups
 - **Format**: Structured with timestamps and process info
+
+## ⚡ Performance & Caching
+
+### Redis Caching
+The application implements intelligent caching to improve performance:
+
+- **Cache Backend**: Redis
+- **Cache Duration**: 24 hours for match data
+- **Cache Key Pattern**: `fastapi-cache:matches:{team_name}:upcoming`
+- **Automatic Invalidation**: Cache expires after 24 hours
+- **Connection Management**: Proper Redis connection lifecycle with application lifespan
+
+### Performance Benefits
+- **Reduced API Calls**: Cached responses reduce external ESPN API calls
+- **Faster Response Times**: Cached data serves instantly
+- **Reduced Server Load**: Less processing for repeated requests
+- **Better User Experience**: Quicker response times for end users
+
+### Cache Configuration
+```python
+# Cache settings in settings.py
+redis:
+  host: localhost
+  port: 6379
+  password: redis
+  database: 0
+```
 
 ## 🔍 Development
 
@@ -326,6 +370,12 @@ POSTGRES__PORT=5432
 POSTGRES__DATABASE_NAME=postgres
 POSTGRES__USERNAME=postgres
 POSTGRES__PASSWORD=postgres
+
+# Redis Cache
+REDIS__HOST=localhost
+REDIS__PORT=6379
+REDIS__PASSWORD=redis
+REDIS__DATABASE=0
 
 # CORS
 CORS__ALLOW_ORIGINS=["*"]

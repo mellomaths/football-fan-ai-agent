@@ -1,12 +1,12 @@
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
+
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from fastapi_cache import FastAPICache
 from fastapi_cache.backends.redis import RedisBackend
-from fastapi_cache.decorator import cache
 from redis import asyncio as aioredis
 
 from api import router as api_router
@@ -58,7 +58,7 @@ def custom_openapi():
                 "url": "http://api.homepi.net/football-fan",
                 "description": "HomePi",
             },
-            {	
+            {
                 "url": "http://localhost:3002",
                 "description": "Local",
             },
