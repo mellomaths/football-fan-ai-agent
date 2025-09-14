@@ -58,6 +58,10 @@ def custom_openapi():
                 "url": "http://api.homepi.net/football-fan",
                 "description": "Football Fan API",
             },
+            {	
+                "url": "http://localhost:3002",
+                "description": "Football Fan API",
+            },
         ],
     )
     app.openapi_schema = openapi_schema

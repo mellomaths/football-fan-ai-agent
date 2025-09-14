@@ -119,6 +119,7 @@ class Settings(BaseSettings):
     feature_flags: FeatureFlags = FeatureFlags()
     logger: LoggerSettings = LoggerSettings()
     postgres: PostgresSettings = PostgresSettings()
+    redis: RedisSettings = RedisSettings()
     cors: CorsSettings = CorsSettings()
 
     @property
