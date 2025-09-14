@@ -56,11 +56,11 @@ def custom_openapi():
         servers=[
             {
                 "url": "http://api.homepi.net/football-fan",
-                "description": "Football Fan API",
+                "description": "Homepi",
             },
             {	
                 "url": "http://localhost:3002",
-                "description": "Football Fan API",
+                "description": "Local",
             },
         ],
     )
