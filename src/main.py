@@ -26,6 +26,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
+    lifespan=lifespan,
     title=settings.app.name,
     version=settings.app.version,
     description=settings.app.description,
