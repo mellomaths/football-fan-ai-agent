@@ -30,12 +30,13 @@ src/
 
 - **REST API**: FastAPI-based web service with automatic OpenAPI documentation
 - **Match Scraping**: Fetches football match data from ESPN using both API and HTML scraping
-- **Team Support**: Currently supports Flamengo (Brazilian Serie A)
+- **Multi-Team Support**: Supports 20 Brazilian football teams with enum-based validation
 - **Dual Scraping Strategy**: Uses ESPN API as primary method with HTML scraping as fallback
 - **Docker Support**: Containerized application with Docker Compose
 - **Health Checks**: Built-in health monitoring endpoints
 - **CORS Support**: Configurable Cross-Origin Resource Sharing
 - **Structured Logging**: Comprehensive logging with file rotation
+- **Development Tools**: Justfile with convenient commands for linting, Docker operations, and development
 
 ## 🛠️ Technology Stack
 
@@ -53,6 +54,7 @@ src/
 - Python 3.12+
 - Docker & Docker Compose (for containerized deployment)
 - UV package manager
+- Just (optional, for development commands)
 
 ## 🚀 Quick Start
 
@@ -66,7 +68,11 @@ src/
 
 2. **Run with Docker Compose**
    ```bash
+   # Using Docker Compose directly
    docker-compose up --build
+   
+   # Or using Justfile commands
+   just run
    ```
 
 3. **Access the API**
@@ -114,7 +120,7 @@ GET /football-fan/api/v1/matches/{team_name}/upcoming
 Fetches upcoming matches for a specific team.
 
 **Parameters:**
-- `team_name` (string): Name of the team (currently supports "FLAMENGO")
+- `team_name` (enum): Name of the team (supports 20 Brazilian teams including FLAMENGO, PALMEIRAS, CORINTHIANS, etc.)
 
 **Response:**
 ```json
@@ -171,19 +177,24 @@ The application uses Pydantic Settings for configuration management. Key setting
 
 ## 🏗️ Scraping Strategy
 
-The application uses a dual scraping approach:
+The application uses a dual scraping approach with **HTML scraping as the primary method**:
 
-### 1. ESPN API (Primary)
-- **Endpoint**: `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/teams/819/schedule`
+### 1. HTML Scraping (Primary)
+- **Endpoint**: `https://www.espn.com/soccer/team/fixtures/_/id/{team_id}/{team_name}`
+- **Method**: Web scraping with BeautifulSoup + JSON extraction
+- **Advantages**: More comprehensive data, includes team logos and links
+- **Implementation**: `EspnScrapperHTML`
+
+### 2. ESPN API (Fallback)
+- **Endpoint**: `https://site.api.espn.com/apis/site/v2/sports/soccer/bra.1/teams/{team_id}/schedule`
 - **Method**: Direct API calls
 - **Advantages**: Fast, reliable, structured data
 - **Implementation**: `EspnScrapperApi`
 
-### 2. HTML Scraping (Fallback)
-- **Endpoint**: `https://www.espn.com/soccer/team/fixtures/_/id/819/flamengo`
-- **Method**: Web scraping with BeautifulSoup
-- **Advantages**: Works when API is unavailable
-- **Implementation**: `EspnScrapperHTML`
+### Team Configuration
+- **Dynamic URLs**: Team-specific URLs generated using team IDs from `EspnConfig`
+- **Team IDs**: 20 Brazilian teams with unique ESPN team identifiers
+- **Flexible Support**: Easy to add new teams by updating the configuration
 
 ## 🐳 Docker Configuration
 
@@ -216,15 +227,40 @@ The application includes built-in health monitoring:
 
 ## 🔍 Development
 
-### Code Quality
-The project includes several code quality tools:
+### Development Commands (Justfile)
+The project includes a `Justfile` with convenient development commands:
+
+```bash
+# Show all available commands
+just help
+
+# Run all linters with auto-fix
+just lint-fix
+
+# Run individual linters
+just lint-ruff-fix
+just lint-black-fix
+just lint-isort-fix
+
+# Run all linters (check only)
+just lint
+
+# Docker operations
+just build          # Build Docker image
+just run            # Run with Docker Compose
+just status         # Check container status
+just logs           # Show container logs
+just stop           # Stop all containers
+```
+
+### Code Quality Tools
 - **Black**: Code formatting
 - **Flake8**: Linting
 - **Pylint**: Advanced linting
 - **Ruff**: Fast linting
 - **isort**: Import sorting
 
-### Running Tests
+### Manual Commands
 ```bash
 # Format code
 uv run black src/
@@ -238,10 +274,43 @@ uv run pylint src/
 
 ## 🌐 Supported Teams
 
-Currently, the application supports:
-- **Flamengo** (Brazilian Serie A, Team ID: 819)
+The application now supports **20 Brazilian football teams** from Serie A and other competitions:
 
-To add more teams, update the `EspnConfig` class in `src/scrappers/espn/espn_config.py`.
+### Serie A Teams
+- **Flamengo** (Team ID: 819)
+- **Palmeiras** (Team ID: 2029)
+- **Cruzeiro** (Team ID: 2022)
+- **Bahia** (Team ID: 9967)
+- **Botafogo** (Team ID: 6086)
+- **São Paulo** (Team ID: 2026)
+- **Bragantino** (Team ID: 6079)
+- **Corinthians** (Team ID: 874)
+- **Fluminense** (Team ID: 3445)
+- **Internacional** (Team ID: 1936)
+- **Ceará** (Team ID: 9969)
+- **Grêmio** (Team ID: 6273)
+- **Atlético-MG** (Team ID: 7632)
+- **Vasco** (Team ID: 3454)
+- **Santos** (Team ID: 2674)
+- **Vitória** (Team ID: 3457)
+- **Juventude** (Team ID: 6270)
+- **Fortaleza** (Team ID: 6272)
+- **Sport** (Team ID: 7631)
+- **Mirassol** (Team ID: 9169)
+
+### Team Validation
+The API now uses **enum-based team validation** through the `Team` enum in `src/models/matches_request.py`, ensuring only valid team names are accepted.
+
+**Example API calls:**
+```bash
+# Valid team names
+GET /football-fan/api/v1/matches/FLAMENGO/upcoming
+GET /football-fan/api/v1/matches/PALMEIRAS/upcoming
+GET /football-fan/api/v1/matches/CORINTHIANS/upcoming
+
+# Invalid team names will return validation errors
+GET /football-fan/api/v1/matches/INVALID_TEAM/upcoming
+```
 
 ## 🔧 Environment Variables
 
