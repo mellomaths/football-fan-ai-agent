@@ -1,4 +1,4 @@
-# Football Fan AI Agent
+# Football Fan API
 
 A FastAPI-based web service that provides football match information by scraping data from ESPN. The application is designed to fetch upcoming matches for specific teams and expose them through a REST API.
 
